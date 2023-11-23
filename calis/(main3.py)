@@ -1,0 +1,94 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import scrolledtext
+import fifo
+import prioridades
+import rr
+import sjf
+
+
+class Proceso:
+    def __init__(self, nombre, tiempo_ejecucion, prioridad):
+        self.nombre = nombre
+        self.tiempo_ejecucion = tiempo_ejecucion
+        self.prioridad = prioridad
+
+
+class App:
+    def __init__(self, master):
+        self.master = master
+        master.title("Planificación de Procesos")
+
+        self.console_text = scrolledtext.ScrolledText(master, width=60, height=15)
+        self.console_text.grid(row=0, column=0, columnspan=2)
+
+        self.add_process_button = tk.Button(master, text="Agregar Proceso", command=self.agregar_proceso)
+        self.add_process_button.grid(row=1, column=0, pady=10)
+
+        self.run_algorithm_button = tk.Button(master, text="Ejecutar Algoritmo", command=self.ejecutar_algoritmo)
+        self.run_algorithm_button.grid(row=1, column=1, pady=10)
+
+        self.exit_button = tk.Button(master, text="Salir", command=self.master.destroy)
+        self.exit_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+        self.console("Bienvenido a la aplicación de planificación de procesos.")
+
+    def agregar_proceso(self):
+        nombre = tk.simpledialog.askstring("Agregar Proceso", "Ingresa el nombre del proceso:")
+        tiempo = int(tk.simpledialog.askinteger("Agregar Proceso", "Ingresa el tiempo de ejecución:"))
+        prioridad = int(tk.simpledialog.askinteger("Agregar Proceso", "Ingresa la prioridad:"))
+        posicion = tk.simpledialog.askstring("Agregar Proceso",
+                                             "¿Dónde deseas agregar el proceso? (Inicio o Fin):").lower()
+
+        if nombre and tiempo is not None and prioridad is not None:
+            if posicion == "inicio":
+                with open("procesos.txt", "r") as archivo:
+                    lineas = archivo.readlines()
+                with open("procesos.txt", "w") as archivo:
+                    archivo.write(f"{nombre}, {tiempo}, {prioridad}\n")
+                    archivo.writelines(lineas)
+            elif posicion == "fin":
+                with open("procesos.txt", "a") as archivo:
+                    archivo.write(f"{nombre}, {tiempo}, {prioridad}\n")
+            else:
+                messagebox.showerror("Error", "Opción no válida. El proceso no se ha agregado.")
+                return
+
+            self.console(f"Proceso agregado: {nombre}, Tiempo: {tiempo}, Prioridad: {prioridad}")
+        else:
+            messagebox.showerror("Error", "Ingresa valores válidos para el proceso.")
+
+    def ejecutar_algoritmo(self):
+        opcion = tk.simpledialog.askinteger("Selecciona un algoritmo", "1. FIFO\n2. Prioridades (Mayor a Menor)\n"
+                                                                       "3. Round Robin\n4. SJF\n\nIngresa el número:")
+        archivo = "procesos.txt"
+
+        if opcion:
+            if opcion == 1:
+                self.console("Ejecutando algoritmo FIFO:")
+                fifo.simulacion_FIFO(archivo)
+            elif opcion == 2:
+                self.console("Ejecutando algoritmo de Prioridades:")
+                prioridades.administrar_procesos_prioridades()
+            elif opcion == 3:
+                self.console("Ejecutando algoritmo Round Robin:")
+                procesos_rr = rr.cargar_procesos(archivo)
+                rr.round_robin(procesos_rr)
+            elif opcion == 4:
+                self.console("Ejecutando algoritmo SJF:")
+                procesos_sjf = sjf.leer_procesos()
+                sjf.ejecutar_sjf(procesos_sjf)
+            else:
+                messagebox.showerror("Error", "Selecciona una opción válida.")
+        else:
+            messagebox.showerror("Error", "Ingresa un número válido para la opción.")
+
+    def console(self, message):
+        self.console_text.insert(tk.END, message + "\n")
+        self.console_text.see(tk.END)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()

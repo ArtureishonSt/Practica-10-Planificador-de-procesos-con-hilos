@@ -1,0 +1,13 @@
+Google Chrome, 11, 2
+Slack, 8, 3
+Registry, 6, 7
+Inicio, 3, 5
+Shell, 6, 3
+Host de Servicio, 10, 1
+Microsoft Text, 7, 2
+System, 8, 4
+smss, 2, 3
+fin, 5, 5
+arturo, 10, 20
+init, 1, 1
+agregado, 2, 2

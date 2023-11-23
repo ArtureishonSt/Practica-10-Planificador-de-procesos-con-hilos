@@ -1,0 +1,103 @@
+import tkinter as tk
+from tkinter import messagebox
+from queue import Queue
+import threading
+import time
+import fifo
+import prioridades
+import rr
+import sjf
+
+
+class Proceso:
+    def __init__(self, nombre, tiempo_ejecucion, prioridad):
+        self.nombre = nombre
+        self.tiempo_ejecucion = tiempo_ejecucion
+        self.prioridad = prioridad
+
+
+class AplicacionPlanificador(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Planificador de Procesos")
+        self.geometry("600x400")
+
+        self.procesos = Queue()
+        self.hilo_ejecucion = None
+
+        self.inicializar_interfaz()
+
+    def inicializar_interfaz(self):
+        tk.Label(self, text="Seleccione un algoritmo de planificación:").pack(pady=10)
+
+        tk.Button(self, text="FIFO", command=self.ejecutar_fifo).pack()
+        tk.Button(self, text="Prioridades", command=self.ejecutar_prioridades).pack()
+        tk.Button(self, text="Round Robin", command=self.ejecutar_round_robin).pack()
+        tk.Button(self, text="SJF", command=self.ejecutar_sjf).pack()
+
+        tk.Button(self, text="Agregar Nuevo Proceso", command=self.agregar_proceso).pack(pady=20)
+
+        tk.Button(self, text="Detener Ejecución", command=self.detener_ejecucion).pack(pady=10)
+
+    def agregar_proceso(self):
+        ventana_agregar = tk.Toplevel(self)
+        ventana_agregar.title("Agregar Nuevo Proceso")
+        ventana_agregar.geometry("300x200")
+
+        tk.Label(ventana_agregar, text="Nombre del Proceso:").pack(pady=5)
+        nombre_entry = tk.Entry(ventana_agregar)
+        nombre_entry.pack(pady=5)
+
+        tk.Label(ventana_agregar, text="Tiempo de Ejecución:").pack(pady=5)
+        tiempo_entry = tk.Entry(ventana_agregar)
+        tiempo_entry.pack(pady=5)
+
+        tk.Label(ventana_agregar, text="Prioridad:").pack(pady=5)
+        prioridad_entry = tk.Entry(ventana_agregar)
+        prioridad_entry.pack(pady=5)
+
+        tk.Button(ventana_agregar, text="Agregar", command=lambda: self.agregar_proceso_lista(
+            nombre_entry.get(), tiempo_entry.get(), prioridad_entry.get(), ventana_agregar)).pack(pady=10)
+
+    def agregar_proceso_lista(self, nombre, tiempo, prioridad, ventana_agregar):
+        try:
+            tiempo = int(tiempo)
+            prioridad = int(prioridad)
+            proceso = Proceso(nombre, tiempo, prioridad)
+            self.procesos.put(proceso)
+            messagebox.showinfo("Éxito", "Proceso agregado correctamente")
+            ventana_agregar.destroy()
+        except ValueError:
+            messagebox.showerror("Error", "Ingrese valores numéricos válidos para tiempo y prioridad")
+
+    def detener_ejecucion(self):
+        if self.hilo_ejecucion and self.hilo_ejecucion.is_alive():
+            self.hilo_ejecucion.do_run = False
+            self.hilo_ejecucion = None
+            messagebox.showinfo("Detenido", "Ejecución detenida correctamente")
+        else:
+            messagebox.showinfo("Advertencia", "No hay ejecución en curso")
+
+    def ejecutar_fifo(self):
+        self.iniciar_ejecucion(lambda: fifo.simulacion_FIFO(self.procesos))
+
+    def ejecutar_prioridades(self):
+        self.iniciar_ejecucion(lambda: prioridades.administrar_procesos_prioridades(self.procesos))
+
+    def ejecutar_round_robin(self):
+        self.iniciar_ejecucion(lambda: rr.round_robin(list(self.procesos.queue)))
+
+    def ejecutar_sjf(self):
+        self.iniciar_ejecucion(lambda: sjf.ejecutar_sjf(list(self.procesos.queue)))
+
+    def iniciar_ejecucion(self, algoritmo):
+        if not self.hilo_ejecucion or not self.hilo_ejecucion.is_alive():
+            self.hilo_ejecucion = threading.Thread(target=algoritmo)
+            self.hilo_ejecucion.start()
+        else:
+            messagebox.showinfo("Advertencia", "Ya hay una ejecución en curso")
+
+
+if __name__ == "__main__":
+    app = AplicacionPlanificador()
+    app.mainloop()

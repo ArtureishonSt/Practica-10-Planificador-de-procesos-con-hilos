@@ -1,0 +1,91 @@
+import tkinter as tk
+from tkinter import ttk
+import threading
+import time
+from queue import Queue
+
+
+class Proceso:
+    def __init__(self, nombre, tiempo_ejecucion, prioridad):
+        self.nombre = nombre
+        self.tiempo_ejecucion = tiempo_ejecucion
+        self.prioridad = prioridad
+
+
+class PlanificadorApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Planificador de Procesos")
+        self.procesos = []
+        self.cola_procesos = Queue()
+        self.inicializar_interfaz()
+
+    def inicializar_interfaz(self):
+        # Etiquetas y campos de entrada
+        ttk.Label(self.root, text="Nombre del Proceso:").grid(column=0, row=0, padx=5, pady=5, sticky="w")
+        self.nombre_entry = ttk.Entry(self.root)
+        self.nombre_entry.grid(column=1, row=0, padx=5, pady=5)
+
+        ttk.Label(self.root, text="Tiempo de Ejecución:").grid(column=0, row=1, padx=5, pady=5, sticky="w")
+        self.tiempo_entry = ttk.Entry(self.root)
+        self.tiempo_entry.grid(column=1, row=1, padx=5, pady=5)
+
+        ttk.Label(self.root, text="Prioridad:").grid(column=0, row=2, padx=5, pady=5, sticky="w")
+        self.prioridad_entry = ttk.Entry(self.root)
+        self.prioridad_entry.grid(column=1, row=2, padx=5, pady=5)
+
+        # Botones
+        ttk.Button(self.root, text="Agregar Proceso", command=self.agregar_proceso).grid(column=0, row=3, columnspan=2,
+                                                                                         pady=10)
+        ttk.Button(self.root, text="Ejecutar Planificación", command=self.ejecutar_planificacion).grid(column=0, row=4,
+                                                                                                       columnspan=2,
+                                                                                                       pady=10)
+
+        # Lista de procesos
+        self.tree = ttk.Treeview(self.root, columns=("Nombre", "Tiempo de Ejecución", "Prioridad"))
+        self.tree.heading("#0", text="ID")
+        self.tree.heading("Nombre", text="Nombre")
+        self.tree.heading("Tiempo de Ejecución", text="Tiempo de Ejecución")
+        self.tree.heading("Prioridad", text="Prioridad")
+        self.tree.grid(column=0, row=5, columnspan=2, padx=5, pady=5)
+
+    def agregar_proceso(self):
+        nombre = self.nombre_entry.get()
+        tiempo = int(self.tiempo_entry.get())
+        prioridad = int(self.prioridad_entry.get())
+        nuevo_proceso = Proceso(nombre, tiempo, prioridad)
+        self.procesos.append(nuevo_proceso)
+
+        # Agregar a la lista de procesos en la interfaz
+        self.tree.insert("", "end", text=len(self.procesos), values=(nombre, tiempo, prioridad))
+
+    def ejecutar_planificacion(self):
+        # Limpiar cola de procesos
+        while not self.cola_procesos.empty():
+            self.cola_procesos.get()
+
+        # Llenar cola de procesos
+        for proceso in self.procesos:
+            self.cola_procesos.put(proceso)
+
+        # Iniciar hilo de planificación
+        threading.Thread(target=self.planificar_procesos).start()
+
+    def planificar_procesos(self):
+        while not self.cola_procesos.empty():
+            proceso_actual = self.cola_procesos.get()
+            self.mostrar_estado_proceso(proceso_actual)
+            time.sleep(1)  # Simular ejecución
+
+        print("Todos los procesos han sido ejecutados.")
+
+    def mostrar_estado_proceso(self, proceso):
+        print(
+            f"Ejecutando {proceso.nombre} - Tiempo Restante: {proceso.tiempo_ejecucion} - Prioridad: {proceso.prioridad}")
+        self.root.update_idletasks()
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PlanificadorApp(root)
+    root.mainloop()
